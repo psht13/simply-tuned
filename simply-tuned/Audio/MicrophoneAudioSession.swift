@@ -10,22 +10,43 @@ enum MicrophonePermissionState: Equatable {
 
 enum MicrophoneAudioSession {
     static func permissionState() -> MicrophonePermissionState {
-        switch AVAudioSession.sharedInstance().recordPermission {
-        case .granted:
-            return .granted
-        case .denied:
-            return .denied
-        case .undetermined:
-            return .undetermined
-        @unknown default:
-            return .undetermined
+        if #available(iOS 17.0, *) {
+            switch AVAudioApplication.shared.recordPermission {
+            case .granted:
+                return .granted
+            case .denied:
+                return .denied
+            case .undetermined:
+                return .undetermined
+            @unknown default:
+                return .undetermined
+            }
+        } else {
+            switch AVAudioSession.sharedInstance().recordPermission {
+            case .granted:
+                return .granted
+            case .denied:
+                return .denied
+            case .undetermined:
+                return .undetermined
+            @unknown default:
+                return .undetermined
+            }
         }
     }
 
     static func requestPermission(_ completion: @escaping (Bool) -> Void) {
-        AVAudioSession.sharedInstance().requestRecordPermission { allowed in
-            DispatchQueue.main.async {
-                completion(allowed)
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { allowed in
+                DispatchQueue.main.async {
+                    completion(allowed)
+                }
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { allowed in
+                DispatchQueue.main.async {
+                    completion(allowed)
+                }
             }
         }
     }
@@ -37,7 +58,7 @@ enum MicrophoneAudioSession {
             mode: .measurement,
             options: [
                 .defaultToSpeaker,
-                .allowBluetooth,
+                .allowBluetoothHFP,
                 .allowBluetoothA2DP,
             ]
         )

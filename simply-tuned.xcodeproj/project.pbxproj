@@ -269,6 +269,7 @@
 				DEVELOPMENT_TEAM = U6RKYCH7N8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Simply Tuned";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone is used to detect guitar pitch for tuning.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -302,6 +303,7 @@
 				DEVELOPMENT_TEAM = U6RKYCH7N8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Simply Tuned";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone is used to detect guitar pitch for tuning.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

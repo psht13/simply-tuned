@@ -19,6 +19,7 @@ final class TunerViewModel: ObservableObject {
     @Published var inTune: Bool = false
     @Published var successEvent: Int = 0
     @Published var microphonePermissionState: MicrophonePermissionState = .undetermined
+    @Published var tunedStringIDs: Set<String> = []
 
     private let pitchDetector = MicrophonePitchDetector()
     private let stringSelector = StringSelectionController()
@@ -34,24 +35,31 @@ final class TunerViewModel: ObservableObject {
     }
 
     func startListening() {
-        let permission = MicrophoneAudioSession.permissionState()
-        microphonePermissionState = permission
+        refreshPermissionState()
 
-        switch permission {
+        switch microphonePermissionState {
         case .granted:
             beginDetection()
-        case .undetermined:
-            MicrophoneAudioSession.requestPermission { [weak self] allowed in
-                guard let self else { return }
-                self.microphonePermissionState = allowed ? .granted : .denied
-                if allowed {
-                    self.beginDetection()
-                } else {
-                    self.stopListening()
-                }
-            }
-        case .denied:
+        case .undetermined, .denied:
             stopListening()
+        }
+    }
+
+    func refreshPermissionState() {
+        microphonePermissionState = MicrophoneAudioSession.permissionState()
+    }
+
+    func requestMicrophonePermission() {
+        guard microphonePermissionState == .undetermined else { return }
+
+        MicrophoneAudioSession.requestPermission { [weak self] allowed in
+            guard let self else { return }
+            self.microphonePermissionState = allowed ? .granted : .denied
+            if allowed {
+                self.beginDetection()
+            } else {
+                self.stopListening()
+            }
         }
     }
 
@@ -109,6 +117,7 @@ final class TunerViewModel: ObservableObject {
         inTune = inTuneUpdate.isInTune
         if inTuneUpdate.didTrigger {
             successEvent += 1
+            markStringTuned(resolvedString)
         }
         centsOffset = Cents.clampedForUI(smoothedCents)
     }
@@ -117,6 +126,7 @@ final class TunerViewModel: ObservableObject {
         stringSelector.reset()
         resetInTuneState()
         centsSmoother.reset()
+        tunedStringIDs.removeAll()
 
         if let matching = selectedTuning.strings.first(where: { $0.name == selectedString.name }) {
             selectedString = matching
@@ -143,5 +153,9 @@ final class TunerViewModel: ObservableObject {
     private func resetInTuneState() {
         inTuneGate.reset()
         inTune = false
+    }
+
+    private func markStringTuned(_ string: TuningString) {
+        tunedStringIDs.insert(string.id)
     }
 }

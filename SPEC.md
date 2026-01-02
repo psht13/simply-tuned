@@ -1,4 +1,4 @@
-# SimplyTuned — MVP Spec (iOS latest only)
+# Simply Tuned — MVP Spec (iOS latest only)
 
 ## Goal
 A simple, free iPhone guitar tuner with a UI inspired by the “center line + left/right deviation” pattern.
@@ -15,7 +15,7 @@ Must feel responsive, pleasant, and minimal.
 ## Core Screens
 ### Tuner Screen (single main screen)
 **Header**
-- App name: “SimpleTuner”
+- App name: “Simply Tuned”
 - Tuning selector (dropdown / sheet)
 - Optional: settings icon (not required MVP)
 

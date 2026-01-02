@@ -1,4 +1,4 @@
-# SimplyTuned
+# Simply Tuned
 
 A minimal iOS (latest-only) guitar tuner.
 
@@ -9,7 +9,7 @@ A minimal iOS (latest-only) guitar tuner.
 4. Build & Run.
 
 ## Microphone permission
-Microphone access is required for pitch detection; iOS will prompt on first launch.
+Microphone access is required for pitch detection; iOS will prompt when you tap Enable Microphone on first launch.
 
 ## Spec
 See `SPEC.md`.
