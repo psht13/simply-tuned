@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-import SwiftUI
 
 @MainActor
 final class TunerViewModel: ObservableObject {
@@ -17,47 +16,85 @@ final class TunerViewModel: ObservableObject {
     @Published var detectedFrequencyHz: Double = 0
     @Published var centsOffset: Double = 0
     @Published var confidence: Double = 0
+    @Published var microphonePermissionState: MicrophonePermissionState = .undetermined
 
-    private var timerCancellable: AnyCancellable?
+    private let pitchDetector = MicrophonePitchDetector()
     private var centsSmoother = ExponentialMovingAverage(alpha: 0.25)
 
     private var autoLockedString: TuningString?
     private var autoDriftBeganAt: Date?
 
-    private var mockStartedAt: Date = .distantPast
-    private var mockSegmentIndex: Int = 0
-    private var mockSegmentStartedAt: Date = .distantPast
-    private var mockInitialCentsForSegment: Double = 0
-
-    private var manualMockStartedAt: Date = .distantPast
-    private var manualMockInitialCents: Double = 0
-
-    func startMocking() {
-        guard timerCancellable == nil else { return }
-
-        mockStartedAt = .now
-        mockSegmentIndex = 0
-        mockSegmentStartedAt = mockStartedAt
-        mockInitialCentsForSegment = initialCentsForMockSegment(0)
-
-        manualMockStartedAt = mockStartedAt
-        manualMockInitialCents = initialCentsForManualString(selectedString)
-
-        timerCancellable = Timer
-            .publish(every: 1.0 / 30.0, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] now in
-                self?.tickMock(at: now)
+    init() {
+        pitchDetector.onPitch = { [weak self] sample in
+            Task { @MainActor in
+                self?.handlePitchSample(sample)
             }
+        }
     }
 
-    func stopMocking() {
-        timerCancellable?.cancel()
-        timerCancellable = nil
+    func startListening() {
+        let permission = MicrophoneAudioSession.permissionState()
+        microphonePermissionState = permission
+
+        switch permission {
+        case .granted:
+            beginDetection()
+        case .undetermined:
+            MicrophoneAudioSession.requestPermission { [weak self] allowed in
+                guard let self else { return }
+                self.microphonePermissionState = allowed ? .granted : .denied
+                if allowed {
+                    self.beginDetection()
+                } else {
+                    self.stopListening()
+                }
+            }
+        case .denied:
+            stopListening()
+        }
+    }
+
+    func stopListening() {
+        pitchDetector.stop()
+        clearPitchValues()
     }
 
     func selectString(_ string: TuningString) {
         selectedString = string
+    }
+
+    private func beginDetection() {
+        do {
+            try pitchDetector.start()
+        } catch {
+            pitchDetector.stop()
+            clearPitchValues()
+        }
+    }
+
+    private func clearPitchValues() {
+        detectedFrequencyHz = 0
+        confidence = 0
+        centsOffset = 0
+        centsSmoother.reset()
+    }
+
+    private func handlePitchSample(_ sample: MicrophonePitchDetector.Sample) {
+        guard sample.frequencyHz > 0 else {
+            clearPitchValues()
+            return
+        }
+
+        detectedFrequencyHz = sample.frequencyHz
+        confidence = sample.confidence
+
+        if isAutoDetectEnabled {
+            updateAutoSelectedString(using: sample.frequencyHz, now: Date())
+        }
+
+        let rawCents = Cents.offset(from: sample.frequencyHz, targetHz: selectedString.frequencyHz)
+        let smoothedCents = centsSmoother.update(with: rawCents)
+        centsOffset = Cents.clampedForUI(smoothedCents)
     }
 
     private func handleTuningChanged(from oldValue: Tuning) {
@@ -70,12 +107,6 @@ final class TunerViewModel: ObservableObject {
         } else {
             selectedString = selectedTuning.strings[0]
         }
-
-        if isAutoDetectEnabled {
-            mockSegmentIndex = 0
-            mockSegmentStartedAt = .now
-            mockInitialCentsForSegment = initialCentsForMockSegment(mockSegmentIndex)
-        }
     }
 
     private func handleAutoDetectToggled(from oldValue: Bool) {
@@ -84,102 +115,13 @@ final class TunerViewModel: ObservableObject {
         autoLockedString = nil
         autoDriftBeganAt = nil
         centsSmoother.reset()
-
-        if isAutoDetectEnabled {
-            mockSegmentIndex = 0
-            mockSegmentStartedAt = .now
-            mockInitialCentsForSegment = initialCentsForMockSegment(mockSegmentIndex)
-        } else {
-            manualMockStartedAt = .now
-            manualMockInitialCents = initialCentsForManualString(selectedString)
-        }
     }
 
     private func handleSelectedStringChanged(from oldValue: TuningString) {
         guard selectedString != oldValue else { return }
 
         centsSmoother.reset()
-        autoLockedString = isAutoDetectEnabled ? selectedString : nil
         autoDriftBeganAt = nil
-
-        if !isAutoDetectEnabled {
-            manualMockStartedAt = .now
-            manualMockInitialCents = initialCentsForManualString(selectedString)
-        }
-    }
-
-    private func tickMock(at now: Date) {
-        let (rawDetectedFrequencyHz, rawConfidence) = generateMockSample(at: now)
-
-        detectedFrequencyHz = rawDetectedFrequencyHz
-        confidence = rawConfidence
-
-        if isAutoDetectEnabled {
-            updateAutoSelectedString(using: rawDetectedFrequencyHz, now: now)
-        }
-
-        let rawCents = Cents.offset(from: rawDetectedFrequencyHz, targetHz: selectedString.frequencyHz)
-        let smoothedCents = centsSmoother.update(with: rawCents)
-        centsOffset = Cents.clampedForUI(smoothedCents)
-    }
-
-    private func generateMockSample(at now: Date) -> (frequencyHz: Double, confidence: Double) {
-        guard !selectedTuning.strings.isEmpty else {
-            return (0, 0)
-        }
-
-        if isAutoDetectEnabled {
-            let segmentDuration: TimeInterval = 3.0
-            let elapsed = now.timeIntervalSince(mockStartedAt)
-            let segmentIndex = Int(elapsed / segmentDuration) % selectedTuning.strings.count
-
-            if segmentIndex != mockSegmentIndex {
-                mockSegmentIndex = segmentIndex
-                mockSegmentStartedAt = now
-                mockInitialCentsForSegment = initialCentsForMockSegment(segmentIndex)
-                centsSmoother.reset()
-            }
-
-            let segmentElapsed = now.timeIntervalSince(mockSegmentStartedAt)
-            let baseString = selectedTuning.strings[mockSegmentIndex]
-
-            let decay = exp(-segmentElapsed / 1.8)
-            let wobble = 2.0 * sin(segmentElapsed * 2.0 * .pi * 1.6)
-            let noise = Double.random(in: -0.6...0.6)
-
-            let cents = mockInitialCentsForSegment * decay + wobble + noise
-            let frequencyHz = baseString.frequencyHz * pow(2, cents / 1200.0)
-            let confidence = mockConfidence(for: cents)
-            return (frequencyHz, confidence)
-        } else {
-            let elapsed = now.timeIntervalSince(manualMockStartedAt)
-            let decay = exp(-elapsed / 3.0)
-            let wobble = 1.25 * sin(elapsed * 2.0 * .pi * 1.1)
-            let noise = Double.random(in: -0.35...0.35)
-
-            let cents = manualMockInitialCents * decay + wobble + noise
-            let frequencyHz = selectedString.frequencyHz * pow(2, cents / 1200.0)
-            let confidence = mockConfidence(for: cents)
-            return (frequencyHz, confidence)
-        }
-    }
-
-    private func initialCentsForMockSegment(_ index: Int) -> Double {
-        let sign: Double = (index % 2 == 0) ? 1 : -1
-        let magnitude = Double((index * 19) % 26 + 10) // 10...35
-        return sign * magnitude
-    }
-
-    private func initialCentsForManualString(_ string: TuningString) -> Double {
-        let scalarSum = string.name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
-        let sign: Double = (scalarSum % 2 == 0) ? 1 : -1
-        let magnitude = Double((scalarSum % 21) + 8) // 8...28
-        return sign * magnitude
-    }
-
-    private func mockConfidence(for cents: Double) -> Double {
-        let closeness = 1.0 - min(1.0, abs(cents) / 50.0)
-        return min(1.0, max(0.0, 0.55 + 0.45 * closeness))
     }
 
     private func updateAutoSelectedString(using detectedFrequencyHz: Double, now: Date) {

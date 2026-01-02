@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TunerView: View {
     @StateObject private var viewModel = TunerViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -9,6 +10,10 @@ struct TunerView: View {
                 header
 
                 controls
+
+                if viewModel.microphonePermissionState == .denied {
+                    permissionNotice
+                }
 
                 TunerIndicatorView(cents: viewModel.centsOffset)
                     .animation(.easeOut(duration: 0.08), value: viewModel.centsOffset)
@@ -19,8 +24,13 @@ struct TunerView: View {
             }
             .padding()
             .navigationBarHidden(true)
-            .onAppear { viewModel.startMocking() }
-            .onDisappear { viewModel.stopMocking() }
+            .onAppear { viewModel.startListening() }
+            .onDisappear { viewModel.stopListening() }
+            .onChange(of: scenePhase) { phase in
+                if phase == .active {
+                    viewModel.startListening()
+                }
+            }
         }
     }
 
@@ -61,6 +71,23 @@ struct TunerView: View {
                 }
             }
         }
+    }
+
+    private var permissionNotice: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Microphone access is denied.")
+                .font(.footnote.weight(.semibold))
+            Text("Enable it in Settings > Privacy & Security > Microphone.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.red.opacity(0.08))
+        )
     }
 
     private var readouts: some View {
