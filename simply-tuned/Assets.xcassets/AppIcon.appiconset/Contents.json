@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "simply-tuned.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
