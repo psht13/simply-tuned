@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4B36DE4D2F0823D200CCA182 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4B36DE4B2F0823D200CCA182 /* AudioKit */; };
+		4B36DE4E2F0823D200CCA182 /* SoundpipeAudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4B36DE4C2F0823D200CCA182 /* SoundpipeAudioKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		4B36DE3B2F0823D100CCA182 /* simply-tuned.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "simply-tuned.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4B36DE4D2F0823D200CCA182 /* AudioKit in Frameworks */,
+				4B36DE4E2F0823D200CCA182 /* SoundpipeAudioKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = "simply-tuned";
 			packageProductDependencies = (
+				4B36DE4B2F0823D200CCA182 /* AudioKit */,
+				4B36DE4C2F0823D200CCA182 /* SoundpipeAudioKit */,
 			);
 			productName = "simply-tuned";
 			productReference = 4B36DE3B2F0823D100CCA182 /* simply-tuned.app */;
@@ -94,6 +103,10 @@
 			);
 			mainGroup = 4B36DE322F0823D100CCA182;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4B36DE492F0823D200CCA182 /* XCRemoteSwiftPackageReference "AudioKit" */,
+				4B36DE4A2F0823D200CCA182 /* XCRemoteSwiftPackageReference "SoundpipeAudioKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4B36DE3C2F0823D100CCA182 /* Products */;
 			projectDirPath = "";
@@ -123,6 +136,38 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4B36DE492F0823D200CCA182 /* XCRemoteSwiftPackageReference "AudioKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AudioKit/AudioKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		4B36DE4A2F0823D200CCA182 /* XCRemoteSwiftPackageReference "SoundpipeAudioKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AudioKit/SoundpipeAudioKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4B36DE4B2F0823D200CCA182 /* AudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4B36DE492F0823D200CCA182 /* XCRemoteSwiftPackageReference "AudioKit" */;
+			productName = AudioKit;
+		};
+		4B36DE4C2F0823D200CCA182 /* SoundpipeAudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4B36DE4A2F0823D200CCA182 /* XCRemoteSwiftPackageReference "SoundpipeAudioKit" */;
+			productName = SoundpipeAudioKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4B36DE442F0823D200CCA182 /* Debug */ = {
@@ -256,6 +301,7 @@
 				DEVELOPMENT_TEAM = U6RKYCH7N8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone is used to detect guitar pitch for tuning.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +334,7 @@
 				DEVELOPMENT_TEAM = U6RKYCH7N8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone is used to detect guitar pitch for tuning.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
