@@ -19,10 +19,8 @@ final class TunerViewModel: ObservableObject {
     @Published var microphonePermissionState: MicrophonePermissionState = .undetermined
 
     private let pitchDetector = MicrophonePitchDetector()
+    private let stringSelector = StringSelectionController()
     private var centsSmoother = ExponentialMovingAverage(alpha: 0.25)
-
-    private var autoLockedString: TuningString?
-    private var autoDriftBeganAt: Date?
 
     init() {
         pitchDetector.onPitch = { [weak self] sample in
@@ -85,21 +83,27 @@ final class TunerViewModel: ObservableObject {
             return
         }
 
+        let resolvedString = stringSelector.selectString(
+            detectedFrequencyHz: sample.frequencyHz,
+            tuning: selectedTuning,
+            userSelectedString: selectedString,
+            isAutoDetectEnabled: isAutoDetectEnabled,
+            now: Date()
+        )
+        if resolvedString != selectedString {
+            selectedString = resolvedString
+        }
+
         detectedFrequencyHz = sample.frequencyHz
         confidence = sample.confidence
 
-        if isAutoDetectEnabled {
-            updateAutoSelectedString(using: sample.frequencyHz, now: Date())
-        }
-
-        let rawCents = Cents.offset(from: sample.frequencyHz, targetHz: selectedString.frequencyHz)
+        let rawCents = Cents.offset(from: sample.frequencyHz, targetHz: resolvedString.frequencyHz)
         let smoothedCents = centsSmoother.update(with: rawCents)
         centsOffset = Cents.clampedForUI(smoothedCents)
     }
 
     private func handleTuningChanged(from oldValue: Tuning) {
-        autoLockedString = nil
-        autoDriftBeganAt = nil
+        stringSelector.reset()
         centsSmoother.reset()
 
         if let matching = selectedTuning.strings.first(where: { $0.name == selectedString.name }) {
@@ -112,8 +116,7 @@ final class TunerViewModel: ObservableObject {
     private func handleAutoDetectToggled(from oldValue: Bool) {
         guard isAutoDetectEnabled != oldValue else { return }
 
-        autoLockedString = nil
-        autoDriftBeganAt = nil
+        stringSelector.reset()
         centsSmoother.reset()
     }
 
@@ -121,56 +124,5 @@ final class TunerViewModel: ObservableObject {
         guard selectedString != oldValue else { return }
 
         centsSmoother.reset()
-        autoDriftBeganAt = nil
-    }
-
-    private func updateAutoSelectedString(using detectedFrequencyHz: Double, now: Date) {
-        guard detectedFrequencyHz > 0, !selectedTuning.strings.isEmpty else { return }
-
-        let candidate = closestString(to: detectedFrequencyHz, in: selectedTuning)
-
-        if autoLockedString == nil {
-            autoLockedString = candidate
-            selectedString = candidate
-            autoDriftBeganAt = nil
-            return
-        }
-
-        guard let lockedString = autoLockedString else { return }
-        if candidate == lockedString { return }
-
-        let lockedCents = Cents.offset(from: detectedFrequencyHz, targetHz: lockedString.frequencyHz)
-        let unlockThresholdCents: Double = 120
-        let unlockDuration: TimeInterval = 0.5
-
-        if abs(lockedCents) <= unlockThresholdCents {
-            autoDriftBeganAt = nil
-            return
-        }
-
-        if let driftBeganAt = autoDriftBeganAt {
-            if now.timeIntervalSince(driftBeganAt) >= unlockDuration {
-                autoLockedString = candidate
-                selectedString = candidate
-                autoDriftBeganAt = nil
-            }
-        } else {
-            autoDriftBeganAt = now
-        }
-    }
-
-    private func closestString(to frequencyHz: Double, in tuning: Tuning) -> TuningString {
-        var bestString = tuning.strings[0]
-        var bestAbsCents = abs(Cents.offset(from: frequencyHz, targetHz: bestString.frequencyHz))
-
-        for string in tuning.strings.dropFirst() {
-            let absCents = abs(Cents.offset(from: frequencyHz, targetHz: string.frequencyHz))
-            if absCents < bestAbsCents {
-                bestAbsCents = absCents
-                bestString = string
-            }
-        }
-
-        return bestString
     }
 }
