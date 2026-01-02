@@ -16,10 +16,13 @@ final class TunerViewModel: ObservableObject {
     @Published var detectedFrequencyHz: Double = 0
     @Published var centsOffset: Double = 0
     @Published var confidence: Double = 0
+    @Published var inTune: Bool = false
+    @Published var successEvent: Int = 0
     @Published var microphonePermissionState: MicrophonePermissionState = .undetermined
 
     private let pitchDetector = MicrophonePitchDetector()
     private let stringSelector = StringSelectionController()
+    private let inTuneGate = InTuneGate()
     private var centsSmoother = ExponentialMovingAverage(alpha: 0.25)
 
     init() {
@@ -74,7 +77,9 @@ final class TunerViewModel: ObservableObject {
         detectedFrequencyHz = 0
         confidence = 0
         centsOffset = 0
+        inTune = false
         centsSmoother.reset()
+        inTuneGate.reset()
     }
 
     private func handlePitchSample(_ sample: MicrophonePitchDetector.Sample) {
@@ -83,12 +88,13 @@ final class TunerViewModel: ObservableObject {
             return
         }
 
+        let now = Date()
         let resolvedString = stringSelector.selectString(
             detectedFrequencyHz: sample.frequencyHz,
             tuning: selectedTuning,
             userSelectedString: selectedString,
             isAutoDetectEnabled: isAutoDetectEnabled,
-            now: Date()
+            now: now
         )
         if resolvedString != selectedString {
             selectedString = resolvedString
@@ -99,11 +105,17 @@ final class TunerViewModel: ObservableObject {
 
         let rawCents = Cents.offset(from: sample.frequencyHz, targetHz: resolvedString.frequencyHz)
         let smoothedCents = centsSmoother.update(with: rawCents)
+        let inTuneUpdate = inTuneGate.update(cents: smoothedCents, now: now)
+        inTune = inTuneUpdate.isInTune
+        if inTuneUpdate.didTrigger {
+            successEvent += 1
+        }
         centsOffset = Cents.clampedForUI(smoothedCents)
     }
 
     private func handleTuningChanged(from oldValue: Tuning) {
         stringSelector.reset()
+        resetInTuneState()
         centsSmoother.reset()
 
         if let matching = selectedTuning.strings.first(where: { $0.name == selectedString.name }) {
@@ -117,12 +129,19 @@ final class TunerViewModel: ObservableObject {
         guard isAutoDetectEnabled != oldValue else { return }
 
         stringSelector.reset()
+        resetInTuneState()
         centsSmoother.reset()
     }
 
     private func handleSelectedStringChanged(from oldValue: TuningString) {
         guard selectedString != oldValue else { return }
 
+        resetInTuneState()
         centsSmoother.reset()
+    }
+
+    private func resetInTuneState() {
+        inTuneGate.reset()
+        inTune = false
     }
 }
