@@ -10,6 +10,3 @@ A minimal iOS (latest-only) guitar tuner.
 
 ## Microphone permission
 Microphone access is required for pitch detection; iOS will prompt when you tap Enable Microphone on first launch.
-
-## Spec
-See `SPEC.md`.
