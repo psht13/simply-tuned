@@ -9,10 +9,12 @@
 /* Begin PBXBuildFile section */
 		4B36DE4D2F0823D200CCA182 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4B36DE4B2F0823D200CCA182 /* AudioKit */; };
 		4B36DE4E2F0823D200CCA182 /* SoundpipeAudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4B36DE4C2F0823D200CCA182 /* SoundpipeAudioKit */; };
+		4B36DE502F0823D200CCA182 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4B36DE4F2F0823D200CCA182 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		4B36DE3B2F0823D100CCA182 /* simply-tuned.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "simply-tuned.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B36DE4F2F0823D200CCA182 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "simply-tuned/Assets.xcassets"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +41,7 @@
 		4B36DE322F0823D100CCA182 = {
 			isa = PBXGroup;
 			children = (
+				4B36DE4F2F0823D200CCA182 /* Assets.xcassets */,
 				4B36DE3D2F0823D100CCA182 /* simply-tuned */,
 				4B36DE3C2F0823D100CCA182 /* Products */,
 			);
@@ -122,6 +125,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4B36DE502F0823D200CCA182 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
