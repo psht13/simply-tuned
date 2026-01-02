@@ -3,6 +3,7 @@ import SwiftUI
 struct TunerView: View {
     @StateObject private var viewModel = TunerViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @State private var feedbackPlayer = SuccessFeedbackPlayer()
 
     var body: some View {
         NavigationStack {
@@ -15,7 +16,7 @@ struct TunerView: View {
                     permissionNotice
                 }
 
-                TunerIndicatorView(cents: viewModel.centsOffset)
+                TunerIndicatorView(cents: viewModel.centsOffset, successEvent: viewModel.successEvent)
                     .animation(.easeOut(duration: 0.08), value: viewModel.centsOffset)
 
                 readouts
@@ -26,6 +27,10 @@ struct TunerView: View {
             .navigationBarHidden(true)
             .onAppear { viewModel.startListening() }
             .onDisappear { viewModel.stopListening() }
+            .onChange(of: viewModel.successEvent) { newValue in
+                guard newValue > 0 else { return }
+                feedbackPlayer.trigger()
+            }
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
                     viewModel.startListening()
